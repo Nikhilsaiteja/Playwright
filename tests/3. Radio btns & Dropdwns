@@ -1,0 +1,8 @@
+Radio Buttons & Checkboxes:
+
+opt1: await page.locator(locator).check();
+opt2: await page.check(locator);
+await expect(page.locator(locator)).toBeChecked();
+await expect(page.locator(locator)).isChecked().toBeTruthy();
+
+
