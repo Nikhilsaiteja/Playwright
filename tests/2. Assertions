@@ -1,0 +1,26 @@
+Assertions used to validate the data.
+toHaveText()
+toHaveValue()
+toBe()
+toContain()
+isChecked()
+isEnabled()
+toBeChecked()
+toBeEnabled()
+toHaveURL()
+toHavetitle()
+toHaveCount()
+toBeTruthy()
+toBeGreaterThanOrEqual()
+
+Hard Assertions terminate from code when they failed.
+
+Soft Asserions ignores failure and execute remaining code and final result failure only. 
+
+Use soft Asserions for independent checks because it can find all errors at once not for everything.Hard Asserions will be usefulto check main fields.
+
+Hard Asserion:
+await expect(locator).toBe(value);
+
+Soft Asserion:
+await expect.soft(locator).toBe(value);

@@ -1,0 +1,690 @@
+Different types of Locators:-
+┌──────────────────────────┬─────────────────────────────────────────────┐
+//  │ Locator                  │ When to Use It                              │
+//  ├──────────────────────────┼─────────────────────────────────────────────┤
+//  │ getByRole()              │ Buttons, links, headings, inputs — FIRST    │
+//  │                          │ choice; mirrors accessibility tree.         │
+//  │ getByText()              │ Any element identified by its text.         │
+//  │ getByLabel()             │ Form fields that have a <label>.            │
+//  │ getByPlaceholder()       │ Inputs with placeholder text.               │
+//  │ getByAltText()           │ <img> elements identified by alt text.      │
+//  │ getByTitle()             │ Elements with a title tooltip attribute.    │
+//  │ getByTestId()            │ Elements with data-testid (team convention).│
+//  ├──────────────────────────┼─────────────────────────────────────────────┤
+//  │ locator('#id')           │ Unique element with a known id.             │
+//  │ locator('.class')        │ Elements sharing a CSS class.               │
+//  │ locator('[name="val"]')  │ Form inputs grouped by name.                │
+//  │ locator('tag')           │ All elements of a tag; combine with others. │
+//  ├──────────────────────────┼─────────────────────────────────────────────┤
+//  │ locator('[attr*="val"]') │ CSS — attribute contains substring.         │
+//  │ locator('parent > child')│ CSS — direct child relationship.            │
+//  │ locator(':nth-child(n)') │ CSS — element by its position.              │
+//  ├──────────────────────────┼─────────────────────────────────────────────┤
+//  │ locator('//tag[@a="v"]') │ XPath — attribute-based query.              │
+//  │ locator('//tag[text()]') │ XPath — exact text match.                   │
+//  │ locator('//contains()')  │ XPath — partial attribute or text match.    │
+//  ├──────────────────────────┼─────────────────────────────────────────────┤
+//  │ .filter({ hasText })     │ Narrow multi-match by text.                 │
+//  │ .first() / .last()       │ Pick one from a list.                       │
+//  │ .nth(n)                  │ Pick the nth match (0-based).               │
+//  │ parent.locator(child)    │ Search inside a parent element.             │
+//  │ .and(otherLocator)       │ Both conditions must match.                 │
+//  └──────────────────────────┴─────────────────────────────────────────────┘
+// normalize-space() : ignore spces
+// //input[@id='2] : check in input tag
+// //*[@id='2'] : check in all tags
+// Xpath Axes: 
+    self
+    parent
+    ancestor
+    child 
+    descendent
+    following
+    following-sibling
+    preceding
+    preceding-sibling
+// =============================================================================
+
+
+// @ts-check
+import { test, expect } from '@playwright/test';
+
+// =============================================================================
+//  COMPLETE GUIDE TO PLAYWRIGHT LOCATORS
+// =============================================================================
+//
+//  A "Locator" is Playwright's way of finding an element on the page.
+//  Instead of querying once and storing a stale reference, a Locator
+//  re-queries the DOM every time you act on it, making tests more reliable.
+//
+//  STRUCTURE OF THIS GUIDE
+//  ─────────────────────────────────────────────────────────────────────────
+//  PART 1 — BUILT-IN SEMANTIC LOCATORS  (Playwright's recommended approach)
+//    1.1  getByRole
+//    1.2  getByText
+//    1.3  getByLabel
+//    1.4  getByPlaceholder
+//    1.5  getByAltText
+//    1.6  getByTitle
+//    1.7  getByTestId
+//
+//  PART 2 — NORMAL / ATTRIBUTE-BASED LOCATORS  (Id, Class, Name, Tag)
+//    2.1  By ID
+//    2.2  By Class
+//    2.3  By Name
+//    2.4  By Tag
+//
+//  PART 3 — CSS LOCATORS  (powerful, flexible selectors)
+//    3.1  Attribute selector
+//    3.2  Compound (chained) CSS selector
+//    3.3  Pseudo-class selectors
+//
+//  PART 4 — XPATH LOCATORS  (when CSS is not enough)
+//    4.1  Relative XPath
+//    4.2  XPath with attribute
+//    4.3  XPath with text()
+//    4.4  XPath with contains()
+//
+//  PART 5 — LOCATOR CHAINING & FILTERING  (narrow down results)
+//    5.1  .filter()
+//    5.2  .nth() / .first() / .last()
+//    5.3  Chaining (parent → child)
+//    5.4  .and() / .or()
+//
+// =============================================================================
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 1 — BUILT-IN SEMANTIC LOCATORS
+//  These are Playwright's RECOMMENDED locators because they are resilient to
+//  HTML changes and closely mirror how users actually interact with the page.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 1.1  getByRole ──────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds elements by their ARIA role (e.g., button, link, heading, checkbox).
+//    This mirrors how assistive technologies (screen readers) see the page.
+//    It is the most resilient and recommended locator in Playwright.
+//
+//  SYNTAX:
+//    page.getByRole(role, { name, exact, checked, disabled, expanded, ... })
+//
+//  COMMON ROLES: button | link | heading | textbox | checkbox | radio |
+//                listitem | menuitem | dialog | img | table | row | cell
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.1 getByRole — find elements by ARIA role', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // Find a link whose accessible name is "Get started"
+  const link = page.getByRole('link', { name: 'Get started' });
+
+  // Find the main heading on the page
+  const heading = page.getByRole('heading', { name: 'Playwright enables reliable end-to-end testing' });
+
+  // Find a button (useful on forms / login pages)
+  // const submitBtn = page.getByRole('button', { name: 'Submit' });
+
+  // Find a checkbox
+  // const checkbox = page.getByRole('checkbox', { name: 'I agree' });
+
+  await expect(link).toBeVisible();
+  await expect(heading).toBeVisible();
+});
+
+
+// ─── 1.2  getByText ──────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds elements by their visible TEXT CONTENT.
+//    By default it does a case-insensitive substring match.
+//    Pass { exact: true } to require an exact, case-sensitive match.
+//
+//  SYNTAX:
+//    page.getByText('text')               // partial match
+//    page.getByText('text', { exact: true }) // exact match
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.2 getByText — find elements by visible text', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // Partial, case-insensitive match (default)
+  const anyNode = page.getByText('reliable end-to-end testing');
+
+  // Exact, case-sensitive match
+  // const exact = page.getByText('Get started', { exact: true });
+
+  await expect(anyNode).toBeVisible();
+});
+
+
+// ─── 1.3  getByLabel ─────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds an INPUT / TEXTAREA / SELECT that is associated with a <label>.
+//    The association is made via the label's "for" attribute OR by wrapping
+//    the input inside the <label> element.
+//    This is the cleanest way to locate form fields.
+//
+//  SYNTAX:
+//    page.getByLabel('Label text')
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.3 getByLabel — find form inputs by their label', async ({ page }) => {
+  await page.goto('https://demo.playwright.dev/todomvc');
+
+  // The input has placeholder "What needs to be done?" and its label text
+  // is "New Todo Input"
+  const input = page.getByLabel('New Todo Input');
+
+  await input.fill('Buy milk');
+  await input.press('Enter');
+
+  await expect(page.getByText('Buy milk')).toBeVisible();
+});
+
+
+// ─── 1.4  getByPlaceholder ───────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds an input field by its PLACEHOLDER attribute text.
+//    Useful when the input has no associated <label> but has a placeholder.
+//
+//  SYNTAX:
+//    page.getByPlaceholder('placeholder text')
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.4 getByPlaceholder — find inputs by placeholder text', async ({ page }) => {
+  await page.goto('https://demo.playwright.dev/todomvc');
+
+  // The todo input has placeholder="What needs to be done?"
+  const todoInput = page.getByPlaceholder('What needs to be done?');
+
+  await todoInput.fill('Walk the dog');
+  await todoInput.press('Enter');
+
+  await expect(page.getByText('Walk the dog')).toBeVisible();
+});
+
+
+// ─── 1.5  getByAltText ───────────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds an <img> (or element with role="img") by its ALT TEXT attribute.
+//    The alt attribute describes an image for screen readers and SEO.
+//
+//  SYNTAX:
+//    page.getByAltText('alternate text')
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.5 getByAltText — find images by their alt attribute', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // Find the Playwright logo image by its alt text
+  const logo = page.getByAltText('Playwright logo');
+
+  await expect(logo).toBeVisible();
+});
+
+
+// ─── 1.6  getByTitle ─────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds an element by its TITLE attribute.
+//    The title attribute shows a tooltip when you hover over an element.
+//    Less common, but handy for icon buttons or abbreviations.
+//
+//  SYNTAX:
+//    page.getByTitle('title value')
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.6 getByTitle — find elements by their title attribute', async ({ page }) => {
+  await page.goto('https://www.iana.org/domains/reserved');
+
+  // Example: <abbr title="Internet Assigned Numbers Authority">IANA</abbr>
+  const ianaAbbr = page.getByTitle('Internet Assigned Numbers Authority');
+
+  await expect(ianaAbbr).toBeVisible();
+});
+
+
+// ─── 1.7  getByTestId ────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Finds elements by a special DATA ATTRIBUTE added specifically for testing,
+//    e.g., data-testid="submit-button". This keeps test selectors separate from
+//    styling/functionality and is very stable across refactors.
+//    The default attribute is "data-testid" but it is configurable.
+//
+//  SYNTAX:
+//    page.getByTestId('testid-value')
+//
+//  HTML EXAMPLE:
+//    <button data-testid="submit-button">Submit</button>
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.7 getByTestId — find elements by data-testid attribute', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // If the page had: <a data-testid="nav-home">Home</a>
+  // const homeLink = page.getByTestId('nav-home');
+  // await expect(homeLink).toBeVisible();
+
+  // Verify the page loads (placeholder assertion for this demo)
+  await expect(page).toHaveTitle(/Playwright/);
+});
+
+
+// =============================================================================
+//  PART 2 — NORMAL / ATTRIBUTE-BASED LOCATORS
+//  These match HTML attributes directly using CSS or locator() with a selector.
+// =============================================================================
+
+// ─── 2.1  By ID ──────────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Every HTML element can have a unique "id" attribute.
+//    CSS uses "#" prefix to select by ID.
+//    IDs should be unique per page — makes them very precise locators.
+//
+//  HTML EXAMPLE:
+//    <input id="username" type="text" />
+//
+//  SYNTAX:
+//    page.locator('#id-value')
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.1 By ID — locate element using #id selector', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // <input id="username" type="text" name="username" />
+  const usernameField = page.locator('#username');
+
+  // <input id="password" type="password" name="password" />
+  const passwordField = page.locator('#password');
+
+  await usernameField.fill('tomsmith');
+  await passwordField.fill('SuperSecretPassword!');
+
+  await expect(usernameField).toHaveValue('tomsmith');
+});
+
+
+// ─── 2.2  By Class ───────────────────────────────────────────────────────────
+//  DEFINITION:
+//    HTML elements can share a CSS "class" for styling purposes.
+//    CSS uses "." prefix to select by class name.
+//    Multiple elements can share the same class — use with caution,
+//    as it may match more than one element.
+//
+//  HTML EXAMPLE:
+//    <button class="btn btn-primary">Login</button>
+//
+//  SYNTAX:
+//    page.locator('.class-name')         // one class
+//    page.locator('.class1.class2')      // must have BOTH classes
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.2 By Class — locate element using .class selector', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // <button class="radius" type="submit">Login</button>
+  const loginButton = page.locator('.radius');
+
+  await expect(loginButton).toBeVisible();
+
+  // Match element that has BOTH classes: "btn" AND "btn-primary"
+  // const primaryBtn = page.locator('.btn.btn-primary');
+});
+
+
+// ─── 2.3  By Name ────────────────────────────────────────────────────────────
+//  DEFINITION:
+//    The "name" attribute is common on form inputs, radio buttons, and checkboxes.
+//    It groups related inputs together and is submitted with form data.
+//    Use the attribute selector [name="value"] to target it.
+//
+//  HTML EXAMPLE:
+//    <input name="username" type="text" />
+//
+//  SYNTAX:
+//    page.locator('[name="attribute-value"]')
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.3 By Name — locate element using [name] attribute selector', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // <input id="username" type="text" name="username" />
+  const usernameByName = page.locator('[name="username"]');
+
+  // <input id="password" type="password" name="password" />
+  const passwordByName = page.locator('[name="password"]');
+
+  await usernameByName.fill('tomsmith');
+  await passwordByName.fill('SuperSecretPassword!');
+
+  await expect(usernameByName).toHaveValue('tomsmith');
+});
+
+
+// ─── 2.4  By Tag ─────────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Every HTML element has a TAG NAME (e.g., button, input, a, h1, div).
+//    You can select elements purely by their tag. Best combined with
+//    other selectors since a tag name alone is rarely unique.
+//
+//  HTML EXAMPLE:
+//    <button>Click Me</button>  →  selected by tag "button"
+//
+//  SYNTAX:
+//    page.locator('tagname')                   // all elements of that tag
+//    page.locator('tagname[attribute="val"]')  // tag + attribute filter
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.4 By Tag — locate element using HTML tag name', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // All <input> elements on the page
+  const allInputs = page.locator('input');
+  await expect(allInputs).toHaveCount(3); // username, password, hidden token
+
+  // Scope the tag further: <input> with type="text"
+  const textInput = page.locator('input[type="text"]');
+  await expect(textInput).toHaveCount(1);
+
+  // Find by tag + id (equivalent to #username)
+  const usernameByTag = page.locator('input#username');
+  await expect(usernameByTag).toBeVisible();
+});
+
+
+// =============================================================================
+//  PART 3 — CSS LOCATORS
+//  CSS selectors give you expressive, composable ways to target elements.
+//  Playwright's locator() accepts any valid CSS selector.
+// =============================================================================
+
+// ─── 3.1  Attribute Selector ─────────────────────────────────────────────────
+//  DEFINITION:
+//    Targets elements based on the presence or value of ANY HTML attribute.
+//    Supports exact match, starts-with, ends-with, and contains patterns.
+//
+//  PATTERNS:
+//    [attr]           → element has the attribute (any value)
+//    [attr="val"]     → exact match
+//    [attr^="val"]    → value STARTS WITH "val"
+//    [attr$="val"]    → value ENDS WITH "val"
+//    [attr*="val"]    → value CONTAINS "val"
+// ─────────────────────────────────────────────────────────────────────────────
+test('3.1 CSS Attribute Selector — target elements by attribute patterns', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // Exact attribute value match
+  const passwordField = page.locator('[type="password"]');
+
+  // Starts-with match: href starting with "https"
+  // const secureLinks = page.locator('[href^="https"]');
+
+  // Contains match: class containing "rad"
+  const containsClass = page.locator('[class*="rad"]'); // matches "radius"
+
+  await expect(passwordField).toBeVisible();
+  await expect(containsClass).toBeVisible(); // the Login button
+});
+
+
+// ─── 3.2  Compound (Chained) CSS Selector ────────────────────────────────────
+//  DEFINITION:
+//    Combine tag, id, class, and attribute selectors to create a precise
+//    path to an element. Descendant and child combinators let you navigate
+//    the DOM hierarchy.
+//
+//  COMBINATORS:
+//    "div p"       → <p> anywhere inside a <div>  (descendant)
+//    "div > p"     → <p> that is a direct child of <div>
+//    "h2 + p"      → <p> immediately after an <h2>  (adjacent sibling)
+//    "h2 ~ p"      → all <p> siblings after an <h2>
+// ─────────────────────────────────────────────────────────────────────────────
+test('3.2 CSS Compound Selector — combine selectors to narrow down elements', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // form containing an input with id="username"
+  const form     = page.locator('form');
+  const username = page.locator('form input#username');      // descendant
+  const passDiv  = page.locator('form > div > input#password'); // direct child path
+
+  await expect(form).toBeVisible();
+  await expect(username).toBeVisible();
+  await expect(passDiv).toBeVisible();
+});
+
+
+// ─── 3.3  CSS Pseudo-class Selectors ─────────────────────────────────────────
+//  DEFINITION:
+//    Pseudo-classes represent a special STATE or POSITION of an element.
+//    They let you select elements based on their context without adding
+//    extra attributes.
+//
+//  COMMON PSEUDO-CLASSES:
+//    :first-child   → first child of its parent
+//    :last-child    → last child of its parent
+//    :nth-child(n)  → nth child (n is 1-based)
+//    :not(selector) → elements that do NOT match the selector
+//    :checked       → checked checkboxes / radio buttons
+//    :disabled      → disabled form elements
+//    :enabled       → enabled form elements
+//    :focus         → currently focused element
+// ─────────────────────────────────────────────────────────────────────────────
+test('3.3 CSS Pseudo-class Selectors — select by state or position', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/checkboxes');
+
+  // Select the first checkbox on the page
+  const firstCheckbox = page.locator('input[type="checkbox"]:first-child');
+
+  // Select a checkbox that is currently checked
+  // const checkedBox = page.locator('input[type="checkbox"]:checked');
+
+  // Select all inputs that are NOT disabled
+  // const enabledInputs = page.locator('input:not([disabled])');
+
+  await expect(firstCheckbox).toBeVisible();
+});
+
+
+// =============================================================================
+//  PART 4 — XPATH LOCATORS
+//  XPath is a query language for XML/HTML. More verbose than CSS but more
+//  powerful — it can traverse DOM in parent/ancestor direction (CSS cannot).
+//  Use page.locator('xpath=...') or simply prefix with // .
+// =============================================================================
+
+// ─── 4.1  Relative XPath ─────────────────────────────────────────────────────
+//  DEFINITION:
+//    A RELATIVE XPath starts with "//" and searches anywhere in the document.
+//    This is preferred over absolute XPath (which starts from the root and
+//    breaks whenever the DOM structure changes).
+//
+//  SYNTAX:
+//    //tagname                  → any element of type tagname
+//    //tagname[@attr='value']   → tagname with a specific attribute
+// ─────────────────────────────────────────────────────────────────────────────
+test('4.1 Relative XPath — find elements using // notation', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // Find any <input> element anywhere in the document
+  const anyInput = page.locator('//input');
+
+  // Find the form element
+  const loginForm = page.locator('//form[@id="login"]');
+
+  await expect(anyInput.first()).toBeVisible();
+  await expect(loginForm).toBeVisible();
+});
+
+
+// ─── 4.2  XPath with Attribute ───────────────────────────────────────────────
+//  DEFINITION:
+//    Use @attributeName inside brackets to filter elements by their attributes.
+//    This is the XPath equivalent of CSS attribute selectors.
+//
+//  SYNTAX:
+//    //tagname[@attr='value']
+//    //tagname[@id='myId']
+//    //*[@name='username']          → any element with name="username"
+// ─────────────────────────────────────────────────────────────────────────────
+test('4.2 XPath with Attribute — query elements by their attributes', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // Find input where id="username"
+  const usernameXpath = page.locator('//input[@id="username"]');
+
+  // Find input where type="password"
+  const passwordXpath = page.locator('//input[@type="password"]');
+
+  // Find button where class contains "radius"
+  const loginBtn = page.locator('//button[@class="radius"]');
+
+  await usernameXpath.fill('tomsmith');
+  await passwordXpath.fill('SuperSecretPassword!');
+  await expect(loginBtn).toBeVisible();
+});
+
+
+// ─── 4.3  XPath with text() ──────────────────────────────────────────────────
+//  DEFINITION:
+//    text() is an XPath function that selects the text node of an element.
+//    Use it to find elements whose text content exactly matches a value.
+//
+//  SYNTAX:
+//    //tagname[text()='Exact Text']
+// ─────────────────────────────────────────────────────────────────────────────
+test('4.3 XPath with text() — find elements by exact text content', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // Find a <button> whose text is exactly " Login"
+  const loginBtn = page.locator('//button[text()=" Login"]');
+
+  await expect(loginBtn).toBeVisible();
+});
+
+
+// ─── 4.4  XPath with contains() ──────────────────────────────────────────────
+//  DEFINITION:
+//    contains() is an XPath function that checks if a string CONTAINS a
+//    substring. Very handy when a value is dynamic or partially known.
+//
+//  SYNTAX:
+//    //tagname[contains(@attr, 'partial-value')]
+//    //tagname[contains(text(), 'partial text')]
+// ─────────────────────────────────────────────────────────────────────────────
+test('4.4 XPath with contains() — partial match on attribute or text', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // Class attribute contains the word "rad" (matches "radius")
+  const btnByPartialClass = page.locator('//*[contains(@class, "rad")]');
+
+  // Any element whose text contains the word "Login"
+  const loginText = page.locator('//*[contains(text(), "Login")]');
+
+  await expect(btnByPartialClass).toBeVisible();
+  await expect(loginText.first()).toBeVisible();
+});
+
+
+// =============================================================================
+//  PART 5 — LOCATOR CHAINING & FILTERING
+//  Refine broad locators into precise ones by chaining additional conditions.
+// =============================================================================
+
+// ─── 5.1  .filter() ──────────────────────────────────────────────────────────
+//  DEFINITION:
+//    Narrows down a locator that matches multiple elements by applying an
+//    additional condition — either a { hasText } substring match or a
+//    { has } sub-locator that must exist inside the element.
+//
+//  SYNTAX:
+//    locator.filter({ hasText: 'text' })
+//    locator.filter({ has: page.locator('selector') })
+// ─────────────────────────────────────────────────────────────────────────────
+test('5.1 .filter() — narrow a multi-match locator with a condition', async ({ page }) => {
+  await page.goto('https://demo.playwright.dev/todomvc');
+
+  const input = page.getByPlaceholder('What needs to be done?');
+  await input.fill('Buy groceries'); await input.press('Enter');
+  await input.fill('Pay bills');     await input.press('Enter');
+  await input.fill('Read a book');   await input.press('Enter');
+
+  // All list items that CONTAIN the text "bills"
+  const billsItem = page.locator('li').filter({ hasText: 'Pay bills' });
+
+  await expect(billsItem).toHaveCount(1);
+  await expect(billsItem).toContainText('Pay bills');
+});
+
+
+// ─── 5.2  .nth() / .first() / .last() ────────────────────────────────────────
+//  DEFINITION:
+//    When a locator matches MULTIPLE elements, these methods let you pick
+//    a specific one by its index in the match list.
+//      .first()    → the first matched element
+//      .last()     → the last matched element
+//      .nth(n)     → the element at index n (0-based)
+//
+//  SYNTAX:
+//    page.locator('li').first()
+//    page.locator('li').last()
+//    page.locator('li').nth(2)   // third item
+// ─────────────────────────────────────────────────────────────────────────────
+test('5.2 .nth() .first() .last() — pick one from many matches', async ({ page }) => {
+  await page.goto('https://demo.playwright.dev/todomvc');
+
+  const input = page.getByPlaceholder('What needs to be done?');
+  await input.fill('Alpha'); await input.press('Enter');
+  await input.fill('Beta');  await input.press('Enter');
+  await input.fill('Gamma'); await input.press('Enter');
+
+  const items = page.locator('li.todo');
+
+  await expect(items.first()).toContainText('Alpha');  // index 0
+  await expect(items.nth(1)).toContainText('Beta');    // index 1
+  await expect(items.last()).toContainText('Gamma');   // last
+});
+
+
+// ─── 5.3  Locator Chaining (Parent → Child) ───────────────────────────────────
+//  DEFINITION:
+//    Call .locator() on an existing Locator to search WITHIN IT.
+//    This acts like a scoped CSS descendant selector and keeps your
+//    selectors readable by breaking them into logical parts.
+//
+//  SYNTAX:
+//    const parent = page.locator('.parent');
+//    const child  = parent.locator('.child');
+// ─────────────────────────────────────────────────────────────────────────────
+test('5.3 Locator Chaining — scope a search inside another locator', async ({ page }) => {
+  await page.goto('https://demo.playwright.dev/todomvc');
+
+  const input = page.getByPlaceholder('What needs to be done?');
+  await input.fill('Task one'); await input.press('Enter');
+
+  // Start from the <ul> container, then find <li> items inside it
+  const todoList = page.locator('.todo-list');
+  const firstTask = todoList.locator('li').first();
+
+  await expect(firstTask).toContainText('Task one');
+});
+
+
+// ─── 5.4  .and() — Combine Two Locators (Both Must Match) ────────────────────
+//  DEFINITION:
+//    Merges two locators so BOTH conditions must be satisfied simultaneously.
+//    Useful when a single selector is not precise enough.
+//
+//  SYNTAX:
+//    page.locator('input').and(page.locator('[type="text"]'))
+//    → finds an <input> that ALSO has type="text"
+// ─────────────────────────────────────────────────────────────────────────────
+test('5.4 .and() — element must satisfy BOTH locators simultaneously', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/login');
+
+  // The element must be an <input> AND have type="text"
+  const textInput = page.locator('input').and(page.locator('[type="text"]'));
+
+  await expect(textInput).toHaveCount(1); // only username field
+  await expect(textInput).toBeVisible();
+});
+
+
+1. getByTestId() — if your team adds data-testid attributes
+2. getByRole() / getByLabel() — semantic, resilient (recommended by Playwright)
+3. CSS (#id, .class) — when no semantic locator fits
+4. XPath — last resort only, when you need to traverse upward in the DOM
+
+Rank	Locator Type	Why
+🥇 1. getByTestId() / [data-testid]	Fastest	Direct attribute lookup — browser finds it in a single DOM pass
+🥇 1. locator('#id')	Fastest	ID is indexed by the browser — O(1) lookup, same as getElementById
+🥈 2. CSS selectors	Very fast	Browsers have native, highly optimized CSS engines built in. locator('.class'), locator('[name="val"]') all use this engine directly
+🥉 3. getByRole(), getByText(), getByLabel()	Slightly slower	Must build and traverse the accessibility tree or scan text nodes, which is extra work on top of CSS
+🐢 4. XPath	Slowest	XPath is not natively optimized in browsers — it is evaluated by a JavaScript engine, which is slower than the CSS engine
