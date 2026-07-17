@@ -5,4 +5,3 @@ opt2: await page.check(locator);
 await expect(page.locator(locator)).toBeChecked();
 await expect(page.locator(locator)).isChecked().toBeTruthy();
 
-
