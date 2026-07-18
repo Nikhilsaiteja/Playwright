@@ -1,26 +1,207 @@
-Assertions used to validate the data.
-toHaveText()
-toHaveValue()
-toBe()
-toContain()
-isChecked()
-isEnabled()
-toBeChecked()
-toBeEnabled()
-toHaveURL()
-toHavetitle()
-toHaveCount()
-toBeTruthy()
-toBeGreaterThanOrEqual()
+Assertions are used to validate expected behavior in tests.
 
-Hard Assertions terminate from code when they failed.
+Different types of Assertions:-
+┌──────────────────────────────┬───────────────────────────────────────────────────────┐
+//  │ Assertion                    │ Purpose                                       │
+//  ├──────────────────────────────┼───────────────────────────────────────────────────────┤
+//  │ toHaveText()                 │ Validate element text content.                │
+//  │ toContainText()              │ Validate partial text content.                │
+//  │ toHaveValue()                │ Validate input value.                         │
+//  │ toBeChecked()                │ Validate checkbox/radio is checked.           │
+//  │ toBeEnabled()                │ Validate element is enabled.                  │
+//  │ toBeVisible()                │ Validate element is visible to user.          │
+//  │ toHaveURL()                  │ Validate current page URL.                    │
+//  │ toHaveTitle()                │ Validate page title.                          │
+//  │ toHaveCount()                │ Validate number of matched elements.          │
+//  │ toBeTruthy()                 │ Validate value is truthy.                     │
+//  │ toBeGreaterThanOrEqual()     │ Validate numeric lower bound.                 │
+//  └──────────────────────────────┴───────────────────────────────────────────────────────┘
 
-Soft Asserions ignores failure and execute remaining code and final result failure only. 
+// Hard Assertion:
+//   Stops the current test immediately when assertion fails.
+//   await expect(locator).toBeVisible();
 
-Use soft Asserions for independent checks because it can find all errors at once not for everything.Hard Asserions will be usefulto check main fields.
+// Soft Assertion:
+//   Continues execution even if assertion fails, and reports failure at end.
+//   await expect.soft(locator).toBeVisible();
 
-Hard Asserion:
-await expect(locator).toBe(value);
+// Use soft assertions for independent checks where you want all failures at once.
+// Use hard assertions for critical checkpoints that must pass to continue.
 
-Soft Asserion:
-await expect.soft(locator).toBe(value);
+
+// @ts-check
+import { test, expect } from '@playwright/test';
+
+// =============================================================================
+//  COMPLETE GUIDE TO PLAYWRIGHT ASSERTIONS
+// =============================================================================
+//
+//  Assertions verify that actual result matches expected result.
+//  Playwright assertions auto-wait until the condition is met or timeout occurs.
+//
+//  STRUCTURE OF THIS GUIDE
+//  ─────────────────────────────────────────────────────────────────────────
+//  PART 1 — WEB-FIRST LOCATOR ASSERTIONS
+//    1.1 toBeVisible
+//    1.2 toHaveText
+//    1.3 toContainText
+//    1.4 toHaveValue
+//    1.5 toBeChecked
+//    1.6 toBeEnabled
+//    1.7 toHaveCount
+//
+//  PART 2 — PAGE ASSERTIONS
+//    2.1 toHaveURL
+//    2.2 toHaveTitle
+//
+//  PART 3 — GENERIC VALUE ASSERTIONS
+//    3.1 toBe / toEqual
+//    3.2 toBeTruthy
+//    3.3 toBeGreaterThanOrEqual
+//
+//  PART 4 — HARD VS SOFT ASSERTIONS
+//    4.1 Hard assertion example
+//    4.2 Soft assertion example
+// =============================================================================
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 1 — WEB-FIRST LOCATOR ASSERTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 1.1 toBeVisible() ──────────────────────────────────────────────────────
+test('1.1 toBeVisible() — element is visible', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	const getStarted = page.getByRole('link', { name: 'Get started' });
+	await expect(getStarted).toBeVisible();
+});
+
+
+// ─── 1.2 toHaveText() ───────────────────────────────────────────────────────
+test('1.2 toHaveText() — exact text validation', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/add_remove_elements/');
+
+	const addButton = page.getByRole('button', { name: 'Add Element' });
+	await expect(addButton).toHaveText('Add Element');
+});
+
+
+// ─── 1.3 toContainText() ────────────────────────────────────────────────────
+test('1.3 toContainText() — partial text validation', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	const heading = page.getByRole('heading', { name: /Playwright enables reliable/i });
+	await expect(heading).toContainText('reliable');
+});
+
+
+// ─── 1.4 toHaveValue() ──────────────────────────────────────────────────────
+test('1.4 toHaveValue() — input value validation', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/login');
+
+	const username = page.locator('#username');
+	await username.fill('tomsmith');
+
+	await expect(username).toHaveValue('tomsmith');
+});
+
+
+// ─── 1.5 toBeChecked() ──────────────────────────────────────────────────────
+test('1.5 toBeChecked() — checkbox state validation', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/checkboxes');
+
+	const checkbox = page.locator('input[type="checkbox"]').first();
+	await checkbox.check();
+
+	await expect(checkbox).toBeChecked();
+});
+
+
+// ─── 1.6 toBeEnabled() ──────────────────────────────────────────────────────
+test('1.6 toBeEnabled() — element enabled state', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	const getStarted = page.getByRole('link', { name: 'Get started' });
+	await expect(getStarted).toBeEnabled();
+});
+
+
+// ─── 1.7 toHaveCount() ──────────────────────────────────────────────────────
+test('1.7 toHaveCount() — count matched elements', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/checkboxes');
+
+	const checkboxes = page.locator('input[type="checkbox"]');
+	await expect(checkboxes).toHaveCount(2);
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 2 — PAGE ASSERTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 2.1 toHaveURL() ────────────────────────────────────────────────────────
+test('2.1 toHaveURL() — validate current URL', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	await expect(page).toHaveURL(/playwright\.dev/);
+});
+
+
+// ─── 2.2 toHaveTitle() ──────────────────────────────────────────────────────
+test('2.2 toHaveTitle() — validate page title', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	await expect(page).toHaveTitle(/Playwright/);
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 3 — GENERIC VALUE ASSERTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 3.1 toBe() / toEqual() ─────────────────────────────────────────────────
+test('3.1 toBe() and toEqual() — generic value checks', async () => {
+	const statusCode = 200;
+	const user = { name: 'Nikhil', role: 'Tester' };
+
+	expect(statusCode).toBe(200);
+	expect(user).toEqual({ name: 'Nikhil', role: 'Tester' });
+});
+
+
+// ─── 3.2 toBeTruthy() ───────────────────────────────────────────────────────
+test('3.2 toBeTruthy() — truthy value check', async () => {
+	const token = 'abc123';
+	expect(token).toBeTruthy();
+});
+
+
+// ─── 3.3 toBeGreaterThanOrEqual() ───────────────────────────────────────────
+test('3.3 toBeGreaterThanOrEqual() — numeric lower bound check', async () => {
+	const responseTimeMs = 450;
+	expect(responseTimeMs).toBeGreaterThanOrEqual(300);
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 4 — HARD VS SOFT ASSERTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 4.1 Hard assertion example ─────────────────────────────────────────────
+test('4.1 Hard assertion — test stops immediately on failure', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	await expect(page).toHaveTitle(/Playwright/); // hard assertion
+	await expect(page.getByRole('link', { name: 'Get started' })).toBeVisible();
+});
+
+
+// ─── 4.2 Soft assertion example ─────────────────────────────────────────────
+test('4.2 Soft assertion — continue checks and report all failures', async ({ page }) => {
+	await page.goto('https://playwright.dev/');
+
+	await expect.soft(page).toHaveTitle(/Playwright/);
+	await expect.soft(page.getByRole('link', { name: 'Get started' })).toBeVisible();
+	await expect.soft(page.getByRole('link', { name: 'Docs' })).toBeVisible();
+});

@@ -1,0 +1,241 @@
+Playwright Actions are used to interact with web elements like a real user.
+
+Different types of Actions:-
+┌──────────────────────────────┬───────────────────────────────────────────────────────┐
+//  │ Action                       │ Purpose                                       │
+//  ├──────────────────────────────┼───────────────────────────────────────────────────────┤
+//  │ click()                      │ Click button, link, checkbox, radio, etc.     │
+//  │ dblclick()                   │ Double click an element.                       │
+//  │ check() / uncheck()          │ Select or clear a checkbox.                    │
+//  │ fill()                       │ Replace input value with new text.             │
+//  │ type()                       │ Type text character-by-character.              │
+//  │ press()                      │ Press keyboard key like Enter, Tab, Escape.    │
+//  │ selectOption()               │ Select option from <select> dropdown.          │
+//  │ hover()                      │ Move mouse over an element.                    │
+//  │ dragTo()                     │ Drag one element and drop on another.          │
+//  │ setInputFiles()              │ Upload files using file input.                 │
+//  └──────────────────────────────┴───────────────────────────────────────────────────────┘
+// NOTE:
+// 1) fill() clears existing value then types new value.
+// 2) press('Enter') is commonly used after fill() to submit forms.
+// 3) Prefer locator-based actions: page.getByRole(...).click() for stability.
+
+
+// @ts-check
+import { test, expect } from '@playwright/test';
+
+// =============================================================================
+//  COMPLETE GUIDE TO PLAYWRIGHT ACTIONS
+// =============================================================================
+//
+//  Actions are operations that simulate user interactions with the page.
+//  With Playwright, we usually perform actions on Locators.
+//
+//  STRUCTURE OF THIS GUIDE
+//  ─────────────────────────────────────────────────────────────────────────
+//  PART 1 — FORM INPUT ACTIONS
+//    1.1 fill()
+//    1.2 press() with Enter
+//    1.3 clear() using fill('')
+//
+//  PART 2 — MOUSE / POINTER ACTIONS
+//    2.1 click()
+//    2.2 dblclick()
+//    2.3 hover()
+//
+//  PART 3 — SELECT / CHECK ACTIONS
+//    3.1 selectOption()
+//    3.2 check() / uncheck()
+//
+//  PART 4 — ADVANCED USER ACTIONS
+//    4.1 dragTo()
+//    4.2 setInputFiles()
+// =============================================================================
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 1 — FORM INPUT ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 1.1 fill() ─────────────────────────────────────────────────────────────
+//  DEFINITION:
+//    fill() sets the value of an input/textarea by clearing existing text and
+//    then typing the provided value.
+//
+//  SYNTAX:
+//    await locator.fill('text');
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.1 fill() — enter text into input field', async ({ page }) => {
+	await page.goto('https://demo.playwright.dev/todomvc');
+
+	const todoInput = page.getByPlaceholder('What needs to be done?');
+	await todoInput.fill('Learn Playwright Actions');
+
+	await expect(todoInput).toHaveValue('Learn Playwright Actions');
+});
+
+
+// ─── 1.2 press() with Enter ─────────────────────────────────────────────────
+//  DEFINITION:
+//    press() sends keyboard keys to the element. Common keys include Enter,
+//    Tab, Escape, ArrowDown, ArrowUp.
+//
+//  SYNTAX:
+//    await locator.press('Enter');
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.2 press() — submit todo by pressing Enter', async ({ page }) => {
+	await page.goto('https://demo.playwright.dev/todomvc');
+
+	const todoInput = page.getByPlaceholder('What needs to be done?');
+	await todoInput.fill('Submit with Enter key');
+	await todoInput.press('Enter');
+
+	await expect(page.getByText('Submit with Enter key')).toBeVisible();
+});
+
+
+// ─── 1.3 clear input value ──────────────────────────────────────────────────
+//  DEFINITION:
+//    Playwright clears an input by calling fill('').
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.3 clear input — use fill(\'\')', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/login');
+
+	const username = page.locator('#username');
+	await username.fill('tempUser');
+	await expect(username).toHaveValue('tempUser');
+
+	await username.fill('');
+	await expect(username).toHaveValue('');
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 2 — MOUSE / POINTER ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 2.1 click() ────────────────────────────────────────────────────────────
+//  DEFINITION:
+//    click() performs a normal mouse click.
+//
+//  SYNTAX:
+//    await locator.click();
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.1 click() — click login button', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/login');
+
+	await page.locator('#username').fill('tomsmith');
+	await page.locator('#password').fill('SuperSecretPassword!');
+	await page.getByRole('button', { name: 'Login' }).click();
+
+	await expect(page).toHaveURL(/secure/);
+});
+
+
+// ─── 2.2 dblclick() ─────────────────────────────────────────────────────────
+//  DEFINITION:
+//    dblclick() performs a double click on an element.
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.2 dblclick() — double click on demo button', async ({ page }) => {
+	await page.goto('https://demoqa.com/buttons');
+
+	const doubleClickBtn = page.getByRole('button', { name: 'Double Click Me' });
+	await doubleClickBtn.dblclick();
+
+	await expect(page.getByText('You have done a double click')).toBeVisible();
+});
+
+
+// ─── 2.3 hover() ────────────────────────────────────────────────────────────
+//  DEFINITION:
+//    hover() moves mouse pointer over an element.
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.3 hover() — hover over user avatar', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/hovers');
+
+	const avatar = page.locator('.figure').first();
+	await avatar.hover();
+
+	await expect(page.getByText('name: user1')).toBeVisible();
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 3 — SELECT / CHECK ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 3.1 selectOption() ─────────────────────────────────────────────────────
+//  DEFINITION:
+//    selectOption() selects one or more options inside <select>.
+//
+//  SYNTAX:
+//    await locator.selectOption('value');
+//    await locator.selectOption({ label: 'Option 1' });
+//    await locator.selectOption({ index: 2 });
+// ─────────────────────────────────────────────────────────────────────────────
+test('3.1 selectOption() — select from dropdown by value', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/dropdown');
+
+	const dropdown = page.locator('#dropdown');
+	await dropdown.selectOption('1');
+
+	await expect(dropdown).toHaveValue('1');
+});
+
+
+// ─── 3.2 check() / uncheck() ────────────────────────────────────────────────
+//  DEFINITION:
+//    check() ensures checkbox is checked.
+//    uncheck() ensures checkbox is unchecked.
+// ─────────────────────────────────────────────────────────────────────────────
+test('3.2 check() and uncheck() — toggle checkbox state', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/checkboxes');
+
+	const checkbox = page.locator('input[type="checkbox"]').first();
+
+	await checkbox.check();
+	await expect(checkbox).toBeChecked();
+
+	await checkbox.uncheck();
+	await expect(checkbox).not.toBeChecked();
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 4 — ADVANCED USER ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 4.1 dragTo() ───────────────────────────────────────────────────────────
+//  DEFINITION:
+//    dragTo() drags one element and drops it onto another.
+// ─────────────────────────────────────────────────────────────────────────────
+test('4.1 dragTo() — drag source onto target', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/drag_and_drop');
+
+	const source = page.locator('#column-a');
+	const target = page.locator('#column-b');
+
+	await source.dragTo(target);
+
+	await expect(page.locator('#column-a header')).toHaveText('B');
+});
+
+
+// ─── 4.2 setInputFiles() ────────────────────────────────────────────────────
+//  DEFINITION:
+//    setInputFiles() is used to upload one or multiple files to
+//    <input type="file">.
+//
+//  NOTE:
+//    This example shows syntax only. Keep test skipped if you do not have
+//    a stable demo upload URL and sample file in project.
+// ─────────────────────────────────────────────────────────────────────────────
+test.skip('4.2 setInputFiles() — upload file example syntax', async ({ page }) => {
+	await page.goto('https://example.com/upload');
+
+	const fileInput = page.locator('input[type="file"]');
+	await fileInput.setInputFiles('tests/data/sample.txt');
+
+	// Add assertion based on your application behavior after upload.
+});
+
