@@ -169,3 +169,31 @@
         }
     }
 }
+
+5.FRAMES{
+    To store the frame in a variable{
+        const frame = page.frame({name:'frameName'});
+        const frame = page.frame({url:'frameURL'});
+        const frameLocator = page.frameLocator('frameSelector');
+    }
+    Interacting with elements inside the frame{
+        await frame.locator('selector').click();
+        await frame.fill('selector','value');
+    }
+    to check no.of frames in a page{
+        const frames = page.frames();
+        const childs = frame.childFrames();
+    }
+}
+
+HIDDEN ELEMENTS{
+    CTRL+SHIFT+P(DevTools Command Menu){
+        search for force, turn on emulated focus page
+    }
+    SelectorHub debugger{
+        turn on selectorhub debugger, click the element within 5 seconds & inspect
+    }
+    Script Execution{
+        under source tab, pause script ececution
+    }
+}

@@ -250,7 +250,7 @@ test.skip('permissions popup', async({browser})=>{
     await page.waitForTimeout(5000);
 });
 
-test.only('basic auth popup',async({browser})=>{
+test.skip('basic auth popup',async({browser})=>{
     //await page.goto('https://admin:admin@the-internet.herokuapp.com/basic_auth'); directly passing username and password in the URL
     const context = await browser.newContext({
         httpCredentials: {
@@ -262,4 +262,34 @@ test.only('basic auth popup',async({browser})=>{
     await page.goto('https://the-internet.herokuapp.com/basic_auth');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
+});
+
+test.only('handling Iframes',async({page})=>{
+    await page.goto('https://ui.vision/demo/webtest/frames/');
+    await page.waitForLoadState('networkidle');
+    const frame5 = page.frame({url: 'https://ui.vision/demo/webtest/frames/frame_5'});
+    if(frame5){
+        const textField = await frame5.locator('[name="mytext5"]');
+        await textField.fill('Hello from frame 5');
+        await page.waitForTimeout(2000);
+
+        const childLink = await frame5.locator('a[href$="https://a9t9.com"]');
+        await childLink.click();
+        await page.waitForTimeout(4000);
+
+        const logo = await frame5.locator('//img[@alt="Ui.Vision by a9t9 software - Image-Driven Automation"]');
+        await expect(logo).toBeVisible();
+
+        const childs = frame5.childFrames();
+        console.log(`Total number of child frames: ${childs.length}`);
+        if(childs.length > 0){
+            // const childFrame = childs[1];
+            // const childLogo = await childFrame.locator('//img[@alt="Ui.Vision by a9t9 software - Image-Driven Automation"]');
+            // await expect(childLogo).toBeVisible();
+            // await page.waitForTimeout(2000);
+            console.log(`Child frame URL: ${childs[0].url()}`);
+        }
+    }else{
+        console.log('Frame not found');
+    }
 });
