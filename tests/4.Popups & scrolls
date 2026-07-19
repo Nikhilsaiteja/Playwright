@@ -1,0 +1,302 @@
+Popups and Scrolls are used when browser flow moves outside the normal single-page interaction.
+
+Different types of Popups and Scrolls:-
+┌──────────────────────────────────┬───────────────────────────────────────────────────────┐
+//  │ Topic                            │ Purpose                                       │
+//  ├──────────────────────────────────┼───────────────────────────────────────────────────────┤
+//  │ context.waitForEvent('page')     │ Handle new tab/window opened from current page.│
+//  │ page.on('dialog')                │ Handle alert/confirm/prompt JS dialogs.       │
+//  │ page.waitForEvent('filechooser') │ Handle OS file picker for uploads.            │
+//  │ browser.newContext({permissions})│ Pre-grant browser permissions popups.         │
+//  │ browser.newContext({httpCredentials}) │ Handle basic auth popup.                 │
+//  ├──────────────────────────────────┼───────────────────────────────────────────────────────┤
+//  │ scrollIntoViewIfNeeded()         │ Bring hidden element into viewport safely.    │
+//  │ page.mouse.wheel()               │ Simulate mouse wheel vertical/horizontal scroll.│
+//  │ page.keyboard.press()            │ Scroll via keys (PageDown, End, Home).        │
+//  │ page.evaluate(window.scrollTo)   │ Programmatic page-level scrolling.            │
+//  │ locator.evaluate(el.scrollTop)   │ Scroll inside specific container/panel.       │
+//  │ loop + height check              │ Handle infinite/lazy loaded pages.            │
+//  └──────────────────────────────────┴───────────────────────────────────────────────────────┘
+
+// NOTE:
+// 1) For popup events, start waiting BEFORE the click that triggers popup.
+// 2) Prefer Promise.all([wait, action]) to avoid race conditions.
+// 3) For scrolling, prefer condition-based waits over fixed time waits.
+
+
+// @ts-check
+import { test, expect } from '@playwright/test';
+
+// =============================================================================
+//  COMPLETE GUIDE TO PLAYWRIGHT POPUPS AND SCROLLS
+// =============================================================================
+//
+//  Popups: browser-level interruptions or new pages triggered by user action.
+//  Scrolls: viewport/container movement needed to reach off-screen content.
+//
+//  STRUCTURE OF THIS GUIDE
+//  ─────────────────────────────────────────────────────────────────────────
+//  PART 1 - POPUPS
+//    1.1 New tab/window popup
+//    1.2 JavaScript dialogs (alert, confirm, prompt)
+//    1.3 File chooser popup
+//    1.4 Permission popup strategy
+//    1.5 Basic authentication popup strategy
+//
+//  PART 2 - SCROLLS
+//    2.1 scrollIntoViewIfNeeded()
+//    2.2 mouse.wheel()
+//    2.3 keyboard based scrolling
+//    2.4 window.scrollTo() with evaluate
+//    2.5 container-level scrolling
+//    2.6 infinite scroll handling
+// =============================================================================
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 1 - POPUPS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 1.1 New tab/window popup ───────────────────────────────────────────────
+//  DEFINITION:
+//    Some actions open a child tab/window. Playwright treats it as a new Page.
+//
+//  RULE:
+//    Wait for context 'page' event before triggering the action.
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.1 New tab popup - capture and validate child page', async ({ page, context }) => {
+	await page.goto('https://the-internet.herokuapp.com/windows');
+
+	const [newPage] = await Promise.all([
+		context.waitForEvent('page'),
+		page.getByRole('link', { name: 'Click Here' }).click()
+	]);
+
+	await newPage.waitForLoadState();
+	await expect(newPage.getByRole('heading', { name: 'New Window' })).toBeVisible();
+});
+
+
+// ─── 1.2 JavaScript dialogs - alert/confirm/prompt ─────────────────────────
+//  DEFINITION:
+//    JS dialogs block the page until accepted or dismissed.
+//
+//  METHODS:
+//    dialog.accept() / dialog.dismiss() / dialog.message() / dialog.type()
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.2 Dialog popup - accept JavaScript alert', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/javascript_alerts');
+
+	page.on('dialog', async dialog => {
+		expect(dialog.type()).toBe('alert');
+		expect(dialog.message()).toContain('I am a JS Alert');
+		await dialog.accept();
+	});
+
+	await page.getByRole('button', { name: 'Click for JS Alert' }).click();
+	await expect(page.locator('#result')).toHaveText('You successfully clicked an alert');
+});
+
+
+// ─── 1.3 File chooser popup ────────────────────────────────────────────────
+//  DEFINITION:
+//    When clicking upload control opens file picker, capture filechooser event.
+//
+//  NOTE:
+//    Prefer direct locator.setInputFiles() when native picker is not required.
+// ─────────────────────────────────────────────────────────────────────────────
+test.skip('1.3 File chooser popup - set selected file', async ({ page }) => {
+	await page.goto('https://example.com/upload');
+
+	const [fileChooser] = await Promise.all([
+		page.waitForEvent('filechooser'),
+		page.locator('input[type="file"]').click()
+	]);
+
+	await fileChooser.setFiles('tests/data/sample.txt');
+	await expect(page.locator('text=Upload successful')).toBeVisible();
+});
+
+
+// ─── 1.4 Permission popup strategy ──────────────────────────────────────────
+//  DEFINITION:
+//    Browser may show permission prompts for geolocation/notifications/camera.
+//
+//  STRATEGY:
+//    Grant permissions in context to avoid runtime prompt interruption.
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.4 Permission popup strategy - pre-grant permissions', async ({ browser }) => {
+	const context = await browser.newContext({
+		permissions: ['geolocation']
+	});
+
+	const page = await context.newPage();
+	await page.goto('https://maps.google.com');
+
+	// Placeholder assertion to keep example deterministic.
+	await expect(page).toHaveURL(/google/);
+	await context.close();
+});
+
+
+// ─── 1.5 Basic auth popup strategy ──────────────────────────────────────────
+//  DEFINITION:
+//    Sites using HTTP basic auth trigger browser credential popup.
+//
+//  STRATEGY:
+//    Send credentials through newContext httpCredentials.
+// ─────────────────────────────────────────────────────────────────────────────
+test('1.5 Basic auth popup strategy - pass credentials via context', async ({ browser }) => {
+	const context = await browser.newContext({
+		httpCredentials: {
+			username: 'admin',
+			password: 'admin'
+		}
+	});
+
+	const page = await context.newPage();
+	await page.goto('https://the-internet.herokuapp.com/basic_auth');
+	await expect(page.locator('p')).toContainText('Congratulations');
+	await context.close();
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 2 - SCROLLS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 2.1 scrollIntoViewIfNeeded() ───────────────────────────────────────────
+//  DEFINITION:
+//    Auto-scrolls only when target element is outside viewport.
+//
+//  USE CASE:
+//    Best before click/fill on elements near page bottom.
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.1 scrollIntoViewIfNeeded() - bring element into viewport', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/large');
+
+	const targetCell = page.locator('table tbody tr').nth(40).locator('td').nth(20);
+	await targetCell.scrollIntoViewIfNeeded();
+
+	await expect(targetCell).toBeVisible();
+});
+
+
+// ─── 2.2 mouse.wheel() ─────────────────────────────────────────────────────
+//  DEFINITION:
+//    Simulates mouse wheel movement.
+//
+//  SYNTAX:
+//    page.mouse.wheel(deltaX, deltaY)
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.2 mouse.wheel() - scroll down then up', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/infinite_scroll');
+
+	await page.mouse.wheel(0, 1200);
+	await page.mouse.wheel(0, -400);
+
+	await expect(page.locator('.jscroll-added')).toHaveCount(1);
+});
+
+
+// ─── 2.3 Keyboard scrolling ─────────────────────────────────────────────────
+//  DEFINITION:
+//    Scroll page using keyboard keys like PageDown/PageUp/End/Home.
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.3 Keyboard scroll - navigate using PageDown and End', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/infinite_scroll');
+
+	await page.keyboard.press('PageDown');
+	await page.keyboard.press('End');
+
+	await expect(page.locator('.jscroll-added').first()).toBeVisible();
+});
+
+
+// ─── 2.4 window.scrollTo() with evaluate ───────────────────────────────────
+//  DEFINITION:
+//    Executes JavaScript to control exact scroll coordinates.
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.4 evaluate scroll - jump to bottom and back to top', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/infinite_scroll');
+
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	await page.evaluate(() => window.scrollTo(0, 0));
+
+	const yPosition = await page.evaluate(() => window.scrollY);
+	expect(yPosition).toBe(0);
+});
+
+
+// ─── 2.5 Container-level scrolling ──────────────────────────────────────────
+//  DEFINITION:
+//    Some apps scroll inside div/panel instead of full page.
+//
+//  NOTE:
+//    Use locator.evaluate to modify scrollTop on that container.
+// ─────────────────────────────────────────────────────────────────────────────
+test.skip('2.5 Container scroll - scroll inside a panel', async ({ page }) => {
+	await page.goto('https://example.com/scroll-container');
+
+	const container = page.locator('.scroll-container');
+	await container.evaluate(el => {
+		el.scrollTop = el.scrollHeight;
+	});
+
+	await expect(page.locator('text=Loaded at bottom')).toBeVisible();
+});
+
+
+// ─── 2.6 Infinite scroll handling ───────────────────────────────────────────
+//  DEFINITION:
+//    Keep scrolling until height stops increasing or max loops reached.
+//
+//  SAFETY:
+//    Add stop condition to avoid infinite loop in tests.
+// ─────────────────────────────────────────────────────────────────────────────
+test('2.6 Infinite scroll - load dynamic content with stop condition', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/infinite_scroll');
+
+	let previousHeight = 0;
+	for (let i = 0; i < 5; i++) {
+		const currentHeight = await page.evaluate(() => document.body.scrollHeight);
+		if (currentHeight === previousHeight) break;
+
+		previousHeight = currentHeight;
+		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+		await page.waitForTimeout(700);
+	}
+
+	await expect(page.locator('.jscroll-added').first()).toBeVisible();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 3 - SLIDER HANDLING
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 3.1 Slider handling (input[type="range"]) ────────────────────────────
+//  DEFINITION:
+//    Slider is a draggable control used to select a value from a range.
+//
+//  COMMON WAYS TO HANDLE:
+//    1) fill() with numeric value (fast and stable for range input)
+//    2) click() on slider track position
+//    3) keyboard ArrowLeft/ArrowRight for step-based change
+//
+//  NOTE:
+//    After changing slider value, always assert the linked output text/value.
+// ─────────────────────────────────────────────────────────────────────────────
+test('3.1 Slider handling - set value and verify output', async ({ page }) => {
+	await page.goto('https://the-internet.herokuapp.com/horizontal_slider');
+
+	const slider = page.locator('input[type="range"]');
+	const output = page.locator('#range');
+
+	// Set slider directly to target value.
+	await slider.fill('4');
+	await expect(output).toHaveText('4');
+
+	// Fine-tune using keyboard step movement.
+	await slider.press('ArrowLeft');
+	await expect(output).toHaveText('3.5');
+});

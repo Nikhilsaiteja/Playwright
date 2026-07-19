@@ -238,4 +238,3 @@ test.skip('4.2 setInputFiles() — upload file example syntax', async ({ page })
 
 	// Add assertion based on your application behavior after upload.
 });
-
