@@ -264,7 +264,7 @@ test.skip('basic auth popup',async({browser})=>{
     await page.waitForTimeout(2000);
 });
 
-test.only('handling Iframes',async({page})=>{
+test.skip('handling Iframes',async({page})=>{
     await page.goto('https://ui.vision/demo/webtest/frames/');
     await page.waitForLoadState('networkidle');
     const frame5 = page.frame({url: 'https://ui.vision/demo/webtest/frames/frame_5'});
@@ -292,4 +292,77 @@ test.only('handling Iframes',async({page})=>{
     }else{
         console.log('Frame not found');
     }
+});
+
+test.skip('testing get API',async ({request})=>{
+    const response = await request.get('https://reqres.in/api/collections/products/records?project_id=39071',{
+        "headers":{
+            'Content-Type': 'application/json',
+            'x-api-key': 'pro_666713eeb1437af1e1dc1b5fb6b4d57924ad5aec172c5f63f5af8e0f04218966',
+        }
+    });
+    const responseBody = await response.json();
+    console.log(`response body: ${JSON.stringify(responseBody)}`);
+    expect(response.status()).toBe(200);
+});
+
+test.skip('testing post API',async ({request})=>{
+    const response = await request.post(
+        'https://reqres.in/api/collections/products/records?project_id=39071',
+        {
+            headers: {
+            'x-api-key': 'pro_666713eeb1437af1e1dc1b5fb6b4d57924ad5aec172c5f63f5af8e0f04218966',
+            'X-Reqres-Env': 'prod',
+            'Content-Type': 'application/json'
+            },
+            data: {
+                "data": {
+                    "name": "Wireless Headphones",
+                    "price": 59.99,
+                    "category": "Electronics",
+                    "in_stock": true
+                }
+            }
+        }
+    );
+
+    const responseBody = await response.json();
+    const id = responseBody.data.id;
+    console.log(`ID of the newly created record: ${id}`);
+    console.log(responseBody);
+    expect(response.status()).toBe(201);
+});
+
+test.skip('testing put api',async ({request})=>{
+    const response = await request.put('https://reqres.in/api/collections/products/records/83938afa-b726-43f8-9fa8-d3e05ab648d9?project_id=39071',{
+        headers: {
+            'x-api-key': 'pro_666713eeb1437af1e1dc1b5fb6b4d57924ad5aec172c5f63f5af8e0f04218966',
+            'X-Reqres-Env': 'prod',
+            'Content-Type': 'application/json'
+        },
+        data: {
+            "data": {
+                "name": "Wireless Headphones",
+                "price": 69.99,
+                "category": "Electronics",
+                "in_stock": true
+            }
+        }
+    });
+    const responseBody = await response.json();
+    console.log(responseBody);
+    expect(response.status()).toBe(200);
+});
+
+test.skip('testing delete api',async ({request})=>{
+    const response = await request.delete('https://reqres.in/api/collections/products/records/83938afa-b726-43f8-9fa8-d3e05ab648d9?project_id=39071',{
+        headers: {
+            'x-api-key': 'pro_666713eeb1437af1e1dc1b5fb6b4d57924ad5aec172c5f63f5af8e0f04218966',
+            'X-Reqres-Env': 'prod',
+            'Content-Type': 'application/json'
+        }
+    });
+    const responseBody = await response.json();
+    console.log(responseBody);
+    expect(response.status()).toBe(204);
 });

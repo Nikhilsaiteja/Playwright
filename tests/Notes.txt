@@ -197,3 +197,55 @@ HIDDEN ELEMENTS{
         under source tab, pause script ececution
     }
 }
+
+6.IMPORTANT TOPICS{
+    BROWSER vs CONTEXT vs PAGE{
+        Browser: A general search engine and useful to show relevant data(Chrome,firefox,webkit etc.)
+        Context: Like incognito window inside browser, which has ability to store the cookies,cache etc.
+        Page: A tab for the context.
+
+        In playwright when we use {page} fixture for each test case, by default for every case new context will be created.
+        If we want to use same context then describe group of test cases and create a browser context manually.
+    }
+    PLAYWRIGHT.CONFIG.TS{
+        testDir: tests directory
+        timeout: max timeout for each case
+        expect.timeout: timeout for assertions
+        workers: no.of workers required
+        use.trace: to eanble trace viewer
+        use.screenshot: on || off || only-on-failure
+        use.headless: to run in headed or headless mode
+        retries: max 3(to run again when failed)
+        reporter: html,line,allure
+    }
+    PLAYWRIGHT vs SELENIUM{
+        1.Playwright works faster because there will be no webdriver to interact with browser.
+        2.Parellel execution will be faster because its justing launching contexts not entire browser like selenium.
+        3.Playwright has Auto waiting mechanism so no need to write implicit or explicit waits.
+        4.Setup and generating reports will be very simple just by managing in config file. while lot of binaries need to install in selenium.
+        5.Playwright has trace viewer, screenshots, vedio records etc which selenium requires lot of add ons.
+    }
+    TYPESCRIPT vs JAVASCRIPT{
+        1.Typescript is super set of JavaScript means its built on top of JavaScript.
+        2.TypeScript is more effecient because we have define type of a varibale while declaring.
+        3.Errors in code will be cached at compilation time itself.
+        4.Using typescript will make code more effecient than Javascript due to its Static nature.
+    }
+    TEXTCONTENT vs INNERTEXT vs INNERHTML{
+        textContent: Returns the output text along with hidden text.
+        innerText: Returns the output which is user able to see nothing else.
+        innerHTML: Retunrs the HTML structure of that locator.
+    }
+
+}
+
+7.SYNCHRONUS & ASYNCHRONUS{
+    Most of Automation tests should run in a sequential synchronus order.
+    Synchronus: Means a process that runs in a sequential order means line by line.When we performing actions on Asynchronus browser its not correct to use Synchronus process.
+    If we use Synchronus page.goto('url'); //starts executing and Retunrs a promise.(Actaul process means navigating to URL still in pending)
+                         page.click(); //startes executig because it recieved Promise from before line so it thinks line1 execution is done.
+    Asynchronus: Means a process that executes parallely. But to make them run sequentially we use await keyword.
+                         await page.goto('url'); //starts executing and returns a promise that has to be resolved.(await keeps here only still promise got resolved)
+                         await page.click(); //then line2 starts executing
+    The main reason why we are using asynchronus means to wait till the promise got resolved which won't happen through synchronus process.
+}

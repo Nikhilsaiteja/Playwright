@@ -1,0 +1,211 @@
+Important Playwright Topics:
+┌────────────────────────────────────────────┬───────────────────────────────────────────────────────┐
+//  │ Topic                                      │ Purpose                                       │
+//  ├────────────────────────────────────────────┼───────────────────────────────────────────────────────┤
+//  │ Browser, BrowserContext, Page              │ Core runtime model for test isolation.         │
+//  │ playwright.config.js                       │ Central place for test runner settings.        │
+//  │ Playwright vs Selenium                     │ Tooling comparison for modern web testing.     │
+//  │ TypeScript vs JavaScript                   │ Language choice for test suites.               │
+//  │ textContent() vs innerText() vs innerHTML()│ Correct text/value extraction strategy.        │
+//  └────────────────────────────────────────────┴───────────────────────────────────────────────────────┘
+
+// @ts-check
+import { test, expect } from '@playwright/test';
+
+// =============================================================================
+//  COMPLETE GUIDE TO IMPORTANT PLAYWRIGHT TOPICS
+// =============================================================================
+//
+//  STRUCTURE OF THIS GUIDE
+//  ─────────────────────────────────────────────────────────────────────────
+//  PART 1 - Browser, BrowserContext, and Page
+//    1.1 Concept and lifecycle
+//    1.2 Practical isolation demo with two contexts
+//
+//  PART 2 - playwright.config.js explained
+//    2.1 Common configuration fields and why they matter
+//
+//  PART 3 - Playwright vs Selenium
+//    3.1 Key differences and when to choose what
+//
+//  PART 4 - TypeScript vs JavaScript for automation
+//    4.1 Pros and trade-offs
+//
+//  PART 5 - textContent vs innerText vs innerHTML
+//    5.1 Behavior differences
+//    5.2 Runnable comparison example
+// =============================================================================
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 1 - Browser, BrowserContext, and Page
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 1.1 Concept and lifecycle ──────────────────────────────────────────────
+//  Browser:
+//    Real browser process (Chromium/Firefox/WebKit).
+//
+//  BrowserContext:
+//    Isolated incognito-like environment inside one browser.
+//    Each context has separate cookies, localStorage, sessionStorage.
+//
+//  Page:
+//    A tab inside a BrowserContext.
+//
+//  Typical runtime flow:
+//    Browser -> Context -> Page
+//
+//  In Playwright Test runner, you usually receive `page` fixture directly,
+//  and Playwright manages browser/context lifecycle for you.
+
+
+// ─── 1.2 Practical isolation demo with two contexts ─────────────────────────
+test('1.2 BrowserContext isolation - cookies are isolated between contexts', async ({ browser }) => {
+	const contextA = await browser.newContext();
+	const contextB = await browser.newContext();
+
+	const pageA = await contextA.newPage();
+	const pageB = await contextB.newPage();
+
+	await pageA.goto('https://example.com');
+	await pageB.goto('https://example.com');
+
+	await contextA.addCookies([
+		{ name: 'session', value: 'A', domain: 'example.com', path: '/' }
+	]);
+	await contextB.addCookies([
+		{ name: 'session', value: 'B', domain: 'example.com', path: '/' }
+	]);
+
+	const cookiesA = await contextA.cookies();
+	const cookiesB = await contextB.cookies();
+
+	expect(cookiesA.find(c => c.name === 'session')?.value).toBe('A');
+	expect(cookiesB.find(c => c.name === 'session')?.value).toBe('B');
+
+	await contextA.close();
+	await contextB.close();
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 2 - playwright.config.js explained
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 2.1 Common fields and why they matter ─────────────────────────────────
+//  Your project uses playwright.config.js (JavaScript config).
+//  If you use TypeScript config, filename becomes playwright.config.ts.
+//
+//  Common fields:
+//    testDir        : Folder containing tests.
+//    timeout        : Max time per test.
+//    expect.timeout : Max auto-wait time for expect(...).
+//    retries        : Retry failed tests (useful in CI).
+//    workers        : Parallel test workers.
+//    reporter       : Console/HTML/JUnit reporting style.
+//    use.baseURL    : Base URL for page.goto('/path').
+//    use.headless   : Run with or without browser UI.
+//    use.screenshot : Capture screenshot on failure or always.
+//    use.trace      : Trace collection for debugging failures.
+//
+//  Example shape:
+//
+//  import { defineConfig } from '@playwright/test';
+//  export default defineConfig({
+//    testDir: './tests',
+//    timeout: 30_000,
+//    retries: 1,
+//    reporter: [['list'], ['html', { open: 'never' }]],
+//    use: {
+//      baseURL: 'https://example.com',
+//      headless: true,
+//      screenshot: 'only-on-failure',
+//      trace: 'retain-on-failure',
+//    },
+//  });
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 3 - Playwright vs Selenium
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 3.1 Quick comparison ───────────────────────────────────────────────────
+//  Playwright:
+//    - Auto-waiting built in for actions/assertions.
+//    - Modern APIs (frames, network mocking, tracing, video, etc.).
+//    - Fast parallel execution and first-class test runner.
+//
+//  Selenium:
+//    - Mature ecosystem and broad legacy support.
+//    - Requires more explicit waits in many scenarios.
+//    - Usually integrated with external runners/frameworks.
+//
+//  Rule of thumb:
+//    Choose Playwright for new UI automation projects.
+//    Choose Selenium if your organization depends on existing Selenium stack.
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 4 - TypeScript vs JavaScript for automation
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 4.1 Pros and trade-offs ────────────────────────────────────────────────
+//  JavaScript:
+//    - Faster to start.
+//    - Less setup overhead.
+//    - Good for small/quick suites.
+//
+//  TypeScript:
+//    - Static typing catches mistakes early.
+//    - Better IntelliSense and refactoring safety.
+//    - Scales better for large teams/suites.
+//
+//  Rule of thumb:
+//    JS is fine for learning and small projects.
+//    TS is better for production-grade, long-term automation.
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PART 5 - textContent vs innerText vs innerHTML
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── 5.1 Behavior differences ───────────────────────────────────────────────
+//  textContent:
+//    - Returns raw text from DOM nodes.
+//    - Includes hidden text.
+//    - Does not trigger layout calculations.
+//
+//  innerText:
+//    - Returns rendered, user-visible text.
+//    - Ignores hidden elements.
+//    - Reflects CSS visibility and line breaks.
+//
+//  innerHTML:
+//    - Returns HTML markup inside element.
+//    - Useful for structure checks, not pure text checks.
+
+
+// ─── 5.2 Runnable comparison example ────────────────────────────────────────
+test('5.2 textContent vs innerText vs innerHTML - practical example', async ({ page }) => {
+	await page.setContent(`
+		<div id="box">
+		  Hello <span style="display:none">Hidden</span>
+		  <b>World</b>
+		</div>
+	`);
+
+	const box = page.locator('#box');
+
+	const rawText = await box.textContent();
+	const visibleText = await box.innerText();
+	const markup = await box.innerHTML();
+
+	// textContent includes hidden text, innerText only visible text.
+	expect(rawText).toContain('Hidden');
+	expect(visibleText).toContain('Hello');
+	expect(visibleText).toContain('World');
+	expect(visibleText).not.toContain('Hidden');
+
+	// innerHTML preserves tags inside the selected element.
+	expect(markup).toContain('<b>World</b>');
+});
